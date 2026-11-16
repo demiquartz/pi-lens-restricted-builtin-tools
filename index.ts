@@ -42,12 +42,13 @@ const LENS_EXTENSIONS = new Set([
   "cpp", "cc", "cxx", "hpp", "hxx", // cpp
   "cs", // csharp
   "css", // css
+  "dart", // dart
   "ex", "exs", // elixir
   "go", // go
   "hs", // haskell
   "html", "htm", // html
   "java", // java
-  "js", "mjs", "cjs", // javascript
+  "js", "mjs", "cjs", "jsx", // javascript
   "json", // json
   "kt", "kts", // kotlin
   "lua", // lua

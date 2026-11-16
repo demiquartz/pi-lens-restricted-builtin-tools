@@ -1,6 +1,6 @@
 # pi-lens-restricted-builtin-tools extension
 
-A pi extension that registers restricted versions of the built-in `write`, `read`, and `edit` tools (shadowing the built-ins) to complement [pi-lens](https://github.com/). It keeps file operations safe and confines each tool to the domain pi-lens does not cover.
+A pi extension that registers restricted versions of the built-in `write`, `read`, and `edit` tools (shadowing the built-ins) to complement [pi-lens](https://github.com/apmantza/pi-lens). It keeps file operations safe and confines each tool to the domain pi-lens does not cover. **It requires pi-lens**: `read`/`edit` reject the formats pi-lens handles, so without pi-lens there is no way to read or edit those files.
 
 ## Why
 
@@ -16,7 +16,7 @@ A pi extension that registers restricted versions of the built-in `write`, `read
 
 ## Safety
 
-All tools are confined to the workspace.
+All tools are confined to the workspace — these guarantees hold only while `bash` is disabled (i.e. running with `--no-builtin-tools`); running with `bash` available (e.g. via `--exclude-tools`) is outside these guarantees.
 
 | Behavior | Result |
 |----------|--------|
@@ -40,7 +40,9 @@ All tools are confined to the workspace.
 
 ## pi-lens-supported formats (rejected by `read`/`edit`)
 
-`sh` `bash` `zsh` `ksh` `c` `h` `cpp` `cc` `cxx` `hpp` `hxx` `cs` `css` `ex` `exs` `go` `hs` `html` `htm` `java` `js` `mjs` `cjs` `json` `kt` `kts` `lua` `nix` `php` `py` `rb` `rs` `scala` `swift` `tsx` `ts` `yaml` `yml`
+The list mirrors the languages pi-lens parses structurally (the set `ast_grep_replace` and `read_symbol`/`module_report` operate on), so code is always edited through pi-lens. It is a snapshot — update it when pi-lens or ast-grep adds a language.
+
+`sh` `bash` `zsh` `ksh` `c` `h` `cpp` `cc` `cxx` `hpp` `hxx` `cs` `css` `dart` `ex` `exs` `go` `hs` `html` `htm` `java` `js` `mjs` `cjs` `jsx` `json` `kt` `kts` `lua` `nix` `php` `py` `rb` `rs` `scala` `swift` `tsx` `ts` `yaml` `yml`
 
 ## Installation
 
@@ -60,7 +62,7 @@ To load it temporarily for testing:
 pi -e /path/to/pi-lens-restricted-builtin-tools/index.ts
 ```
 
-Run with `pi --no-builtin-tools` so the built-in `write`/`read`/`edit` are disabled and these restricted tools (plus pi-lens) are the only file-operation paths.
+Run with `pi --no-builtin-tools`. The extension's `write`/`read`/`edit` already shadow the built-ins by name; what the flag actually disables is `bash`, which would otherwise bypass every path, line-count, and format rule via `cat`/`sed`/`tee`. So the flag is **required**, not optional. (pi-lens does not depend on the `bash` tool — it launches its LSP servers and `ast-grep` directly — so disabling it is safe.)
 
 ## License
 
