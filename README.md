@@ -4,13 +4,13 @@ A pi extension that registers restricted versions of the built-in `write`, `read
 
 ## Why
 
-`pi-lens` owns code read/edit (`read_symbol`, `module_report`, `ast_grep_replace`). It does not cover prose or config files. This extension fills that gap with workspace-confined `write`/`read`/`edit` that **reject the formats pi-lens supports**, so code always goes through pi-lens and never through a low-friction text fallback.
+`pi-lens` owns code read/edit (`read_symbol`, `module_report`, `ast_grep_replace`), but it needs an anchor point to edit — a new or empty file has none. `write` therefore accepts **any format**: it is the only way to create new files and bootstrap empty ones. It can only overwrite files with fewer than 64 lines (a simple proxy for "fits in the context"), because regenerating a larger file in one pass would exceed the context and cause omission damage; larger files must be edited incrementally. `read`/`edit` reject the formats pi-lens supports, so existing code always goes through pi-lens and never through a low-friction text fallback.
 
 ## Tools
 
 | Tool | Scope | Notes |
 |------|-------|-------|
-| `write` | Any format | Creates new files, or overwrites existing files with fewer than 64 lines |
+| `write` | Any format | Creates new files, or overwrites existing files with fewer than 64 lines (the bootstrap path; larger files are edited incrementally) |
 | `read` | Non-lens formats only | Reads prose/config; rejects code/JSON/YAML (use `read_symbol`/`module_report`) |
 | `edit` | Non-lens formats only | Exact text replacement; rejects code/JSON/YAML (use `ast_grep_replace`) |
 
@@ -29,7 +29,7 @@ All tools are confined to the workspace.
 `write` additionally:
 - Creates parent directories recursively
 - Overwrites an existing file only if it has fewer than 64 lines
-- Fails if the path exists as a file with 64+ lines or as a directory
+- Fails if the path exists as a file with 64+ lines or as a directory — larger files are edited incrementally (`edit` for prose, `ast_grep_replace` for code)
 
 `read`/`edit` additionally:
 - Reject files in pi-lens-supported formats (code, JSON, YAML), pointing to pi-lens
@@ -60,7 +60,7 @@ To load it temporarily for testing:
 pi -e /path/to/pi-lens-restricted-builtin-tools/index.ts
 ```
 
-Run with `pi --no-builtin-tools` so the built-in `read`/`edit`/`write` are disabled and these restricted tools (plus pi-lens) are the only file-operation paths.
+Run with `pi --no-builtin-tools` so the built-in `write`/`read`/`edit` are disabled and these restricted tools (plus pi-lens) are the only file-operation paths.
 
 ## License
 
