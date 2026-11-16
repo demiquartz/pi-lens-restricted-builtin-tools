@@ -11,8 +11,8 @@ A pi extension that registers restricted versions of the built-in `write`, `read
 | Tool | Scope | Notes |
 |------|-------|-------|
 | `write` | Any format | Creates new files, or overwrites existing files with fewer than 64 lines (the bootstrap path; larger files are edited incrementally) |
-| `read` | Non-lens formats only | Reads prose/config; rejects code/JSON/YAML (use `read_symbol`/`module_report`) |
-| `edit` | Non-lens formats only | Exact text replacement; rejects code/JSON/YAML (use `ast_grep_replace`) |
+| `read` | Non-lens formats only | Reads prose/config; rejects tree-sitter languages (use `read_symbol`/`module_report`) |
+| `edit` | Non-lens formats only | Exact text replacement; rejects ast-grep languages (use `ast_grep_replace`) |
 
 ## Safety
 
@@ -40,9 +40,20 @@ All tools are confined to the workspace — these guarantees hold only while `ba
 
 ## pi-lens-supported formats (rejected by `read`/`edit`)
 
-The list mirrors the languages pi-lens parses structurally (the set `ast_grep_replace` and `read_symbol`/`module_report` operate on), so code is always edited through pi-lens. It is a snapshot — update it when pi-lens or ast-grep adds a language.
+`read` and `edit` reject **different** sets, because pi-lens reads and edits via different mechanisms:
 
-`sh` `bash` `zsh` `ksh` `c` `h` `cpp` `cc` `cxx` `hpp` `hxx` `cs` `css` `dart` `ex` `exs` `go` `hs` `html` `htm` `java` `js` `mjs` `cjs` `jsx` `json` `kt` `kts` `lua` `nix` `php` `py` `rb` `rs` `scala` `swift` `tsx` `ts` `yaml` `yml`
+- **`read`** rejects the languages pi-lens parses with **tree-sitter** — what `read_symbol`/`module_report` can read. Source: pi-lens's `scripts/download-grammars.ts` grammar set.
+- **`edit`** rejects the languages `ast_grep_replace` can edit — what **ast-grep** supports.
+
+The sets differ: ast-grep supports `nix`/`scala`/`haskell` (no tree-sitter grammar in pi-lens, so `read` accepts them) but not `toml`/`vue`/`ocaml`/`cue`/`groovy` (which have tree-sitter grammars, so `edit` accepts them). Every rejected format has a working pi-lens counterpart, so there is no dead end.
+
+**`read` rejects (tree-sitter):**
+`sh` `bash` `zsh` `ksh` `c` `h` `cpp` `cc` `cxx` `hpp` `hxx` `cs` `css` `dart` `ex` `exs` `go` `html` `htm` `java` `js` `mjs` `cjs` `jsx` `json` `kt` `kts` `lua` `ml` `mli` `php` `py` `rb` `rs` `swift` `toml` `tsx` `ts` `vue` `yaml` `yml` `zig` `cue` `groovy`
+
+**`edit` rejects (ast-grep):**
+`sh` `bash` `zsh` `ksh` `c` `h` `cpp` `cc` `cxx` `hpp` `hxx` `cs` `css` `dart` `ex` `exs` `go` `hs` `html` `htm` `java` `js` `mjs` `cjs` `jsx` `json` `kt` `kts` `lua` `nix` `php` `py` `rb` `rs` `scala` `swift` `tsx` `ts` `yaml` `yml` `zig`
+
+Both lists are snapshots — update them when pi-lens or ast-grep adds a language.
 
 ## Installation
 

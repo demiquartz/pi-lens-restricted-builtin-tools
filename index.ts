@@ -33,10 +33,48 @@ const MAX_OVERWRITE_LINES = 64;
 const MAX_READ_LINES = 2000;
 
 /**
- * File extensions supported by pi-lens (its AST languages). `read` and `edit`
- * reject these so that code/JSON/YAML are handled by pi-lens instead.
+ * Extensions of the languages pi-lens parses with tree-sitter, i.e. what
+ * `read_symbol`/`module_report` can read. Source: pi-lens's
+ * `scripts/download-grammars.ts` grammar set. `read` rejects these.
  */
-const LENS_EXTENSIONS = new Set([
+const LENS_READ_EXTENSIONS = new Set([
+  "sh", "bash", "zsh", "ksh", // bash
+  "c", "h", // c
+  "cpp", "cc", "cxx", "hpp", "hxx", // cpp
+  "cs", // csharp
+  "css", // css
+  "dart", // dart
+  "ex", "exs", // elixir
+  "go", // go
+  "html", "htm", // html
+  "java", // java
+  "js", "mjs", "cjs", "jsx", // javascript
+  "json", // json
+  "kt", "kts", // kotlin
+  "lua", // lua
+  "ml", "mli", // ocaml
+  "php", // php
+  "py", // python
+  "rb", // ruby
+  "rs", // rust
+  "swift", // swift
+  "toml", // toml
+  "tsx", // tsx
+  "ts", // typescript
+  "vue", // vue
+  "yaml", "yml", // yaml
+  "zig", // zig
+  "cue", // cue
+  "groovy", // groovy
+]);
+
+/**
+ * Extensions of the languages `ast_grep_replace` can edit (ast-grep supported).
+ * This differs from LENS_READ_EXTENSIONS: ast-grep supports nix/scala/haskell
+ * (no tree-sitter grammar in pi-lens) but not toml/vue/ocaml/cue/groovy
+ * (which have tree-sitter grammars). `edit` rejects these.
+ */
+const LENS_EDIT_EXTENSIONS = new Set([
   "sh", "bash", "zsh", "ksh", // bash
   "c", "h", // c
   "cpp", "cc", "cxx", "hpp", "hxx", // cpp
@@ -62,6 +100,7 @@ const LENS_EXTENSIONS = new Set([
   "tsx", // tsx
   "ts", // typescript
   "yaml", "yml", // yaml
+  "zig", // zig
 ]);
 
 export default function restrictedBuiltinToolsExtension(pi: ExtensionAPI) {
@@ -158,7 +197,7 @@ export default function restrictedBuiltinToolsExtension(pi: ExtensionAPI) {
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       const { rel, target } = resolveWorkspacePath(params.path, ctx.cwd);
-      assertNotLensFormat(rel);
+      assertNotLensFormat(rel, "read");
 
       let content: string;
       try {
@@ -219,7 +258,7 @@ export default function restrictedBuiltinToolsExtension(pi: ExtensionAPI) {
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       const { rel, target } = resolveWorkspacePath(params.path, ctx.cwd);
-      assertNotLensFormat(rel);
+      assertNotLensFormat(rel, "edit");
 
       if (params.edits.length === 0) throw new Error("at least one edit is required");
 
@@ -354,13 +393,18 @@ function countOccurrences(haystack: string, needle: string): number {
   return count;
 }
 
-/** Reject files in formats pi-lens supports, pointing to pi-lens instead. */
-function assertNotLensFormat(rel: string): void {
+/**
+ * Reject files in a format the given tool's pi-lens counterpart handles, pointing
+ * to that counterpart. `read` uses the tree-sitter set; `edit` uses the ast-grep set.
+ */
+function assertNotLensFormat(rel: string, tool: "read" | "edit"): void {
   const ext = path.extname(rel).slice(1).toLowerCase();
-  if (LENS_EXTENSIONS.has(ext)) {
+  const lensExtensions = tool === "read" ? LENS_READ_EXTENSIONS : LENS_EDIT_EXTENSIONS;
+  if (lensExtensions.has(ext)) {
+    const hint = tool === "read" ? "read_symbol / module_report" : "ast_grep_replace";
     throw new Error(
-      `this file (.${ext}) is supported by pi-lens; use pi-lens tools instead ` +
-        `(read_symbol / module_report to read, ast_grep_replace to edit)`,
+      `this file (.${ext}) is supported by pi-lens; use ${hint} instead ` +
+        `(this ${tool} tool is for non-pi-lens files)`,
     );
   }
 }
