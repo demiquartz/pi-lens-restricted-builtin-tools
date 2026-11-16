@@ -4,7 +4,7 @@ A pi extension that registers restricted versions of the built-in `write`, `read
 
 ## Why
 
-`pi-lens` owns code read/edit (`read_symbol`, `module_report`, `ast_grep_replace`), but it needs an anchor point to edit — a new or empty file has none. `write` therefore accepts **any format**: it is the only way to create new files and bootstrap empty ones. It can only overwrite files with fewer than 64 lines (a simple proxy for "fits in the context"), because regenerating a larger file in one pass would exceed the context and cause omission damage; larger files must be edited incrementally. `read`/`edit` reject the formats pi-lens supports, so existing code always goes through pi-lens and never through a low-friction text fallback.
+`pi-lens` owns code read/edit (`read_symbol`, `module_report`, `ast_grep_replace`), but it needs an anchor point to edit — a file that does not exist yet, or an empty file, gives it nothing to anchor on. `write` therefore accepts **any format**: it is the only way to create new files and bootstrap empty ones. It can only overwrite files with fewer than 64 lines (a simple proxy for "fits in the context"), because regenerating a larger file in one pass would exceed the context and cause omission damage; larger files must be edited incrementally. `read`/`edit` reject the formats pi-lens supports, so code reading and editing goes through pi-lens rather than a low-friction text fallback.
 
 ## Tools
 
