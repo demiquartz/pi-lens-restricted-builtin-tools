@@ -69,10 +69,13 @@ const LENS_READ_EXTENSIONS = new Set([
 ]);
 
 /**
- * Extensions of the languages `ast_grep_replace` can edit (ast-grep supported).
- * This differs from LENS_READ_EXTENSIONS: ast-grep supports nix/scala/haskell
- * (no tree-sitter grammar in pi-lens) but not toml/vue/ocaml/cue/groovy
- * (which have tree-sitter grammars). `edit` rejects these.
+ * Extensions of the languages `ast_grep_replace` can edit, i.e. pi-lens's
+ * `tools/shared.ts` LANGUAGES (the 24 lang IDs `ast_grep_replace` accepts;
+ * any other `lang` is refused as `unknown lang`). This differs from
+ * LENS_READ_EXTENSIONS in both directions: nix/scala/haskell are in LANGUAGES
+ * but have no tree-sitter grammar (so `read` accepts them); dart/zig have
+ * tree-sitter grammars but are NOT in LANGUAGES (so `ast_grep_replace` cannot
+ * edit them and `edit` accepts them as text). `edit` rejects these.
  */
 const LENS_EDIT_EXTENSIONS = new Set([
   "sh", "bash", "zsh", "ksh", // bash
@@ -80,7 +83,6 @@ const LENS_EDIT_EXTENSIONS = new Set([
   "cpp", "cc", "cxx", "hpp", "hxx", // cpp
   "cs", // csharp
   "css", // css
-  "dart", // dart
   "ex", "exs", // elixir
   "go", // go
   "hs", // haskell
@@ -100,7 +102,6 @@ const LENS_EDIT_EXTENSIONS = new Set([
   "tsx", // tsx
   "ts", // typescript
   "yaml", "yml", // yaml
-  "zig", // zig
 ]);
 
 export default function restrictedBuiltinToolsExtension(pi: ExtensionAPI) {

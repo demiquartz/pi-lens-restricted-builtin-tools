@@ -43,17 +43,22 @@ All tools are confined to the workspace — these guarantees hold only while `ba
 `read` and `edit` reject **different** sets, because pi-lens reads and edits via different mechanisms:
 
 - **`read`** rejects the languages pi-lens parses with **tree-sitter** — what `read_symbol`/`module_report` can read. Source: pi-lens's `scripts/download-grammars.ts` grammar set.
-- **`edit`** rejects the languages `ast_grep_replace` can edit — what **ast-grep** supports.
+- **`edit`** rejects the languages `ast_grep_replace` can edit — the 24 lang IDs in pi-lens's `tools/shared.ts` `LANGUAGES`. `ast_grep_replace` refuses any other `lang` as `unknown lang`.
 
-The sets differ: ast-grep supports `nix`/`scala`/`haskell` (no tree-sitter grammar in pi-lens, so `read` accepts them) but not `toml`/`vue`/`ocaml`/`cue`/`groovy` (which have tree-sitter grammars, so `edit` accepts them). Every rejected format has a working pi-lens counterpart, so there is no dead end.
+The sets differ in both directions:
+- `nix`/`scala`/`haskell` are in `LANGUAGES` but have no tree-sitter grammar, so `read` accepts them (text) and `edit` rejects them (use `ast_grep_replace`).
+- `dart`/`zig` have tree-sitter grammars (so `read` rejects them) but are **not** in `LANGUAGES`, so `ast_grep_replace` cannot edit them and `edit` accepts them (text).
+- `toml`/`vue`/`ocaml`/`cue`/`groovy` have tree-sitter grammars but are not in `LANGUAGES`, so `read` rejects them and `edit` accepts them (text).
+
+Every rejected format has a working pi-lens counterpart, so there is no dead end.
 
 **`read` rejects (tree-sitter):**
 `sh` `bash` `zsh` `ksh` `c` `h` `cpp` `cc` `cxx` `hpp` `hxx` `cs` `css` `dart` `ex` `exs` `go` `html` `htm` `java` `js` `mjs` `cjs` `jsx` `json` `kt` `kts` `lua` `ml` `mli` `php` `py` `rb` `rs` `swift` `toml` `tsx` `ts` `vue` `yaml` `yml` `zig` `cue` `groovy`
 
-**`edit` rejects (ast-grep):**
-`sh` `bash` `zsh` `ksh` `c` `h` `cpp` `cc` `cxx` `hpp` `hxx` `cs` `css` `dart` `ex` `exs` `go` `hs` `html` `htm` `java` `js` `mjs` `cjs` `jsx` `json` `kt` `kts` `lua` `nix` `php` `py` `rb` `rs` `scala` `swift` `tsx` `ts` `yaml` `yml` `zig`
+**`edit` rejects (`tools/shared.ts` LANGUAGES):**
+`sh` `bash` `zsh` `ksh` `c` `h` `cpp` `cc` `cxx` `hpp` `hxx` `cs` `css` `ex` `exs` `go` `hs` `html` `htm` `java` `js` `mjs` `cjs` `jsx` `json` `kt` `kts` `lua` `nix` `php` `py` `rb` `rs` `scala` `swift` `tsx` `ts` `yaml` `yml`
 
-Both lists are snapshots — update them when pi-lens or ast-grep adds a language.
+Both lists are snapshots — update them when pi-lens adds a tree-sitter grammar or a `LANGUAGES` entry.
 
 ## Installation
 
