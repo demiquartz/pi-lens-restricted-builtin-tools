@@ -21,16 +21,20 @@
  * pi-lens (read_symbol / module_report / ast_grep_replace). Together with
  * pi-lens, these tools cover all files without overlap.
  */
-import { type ExtensionAPI, withFileMutationQueue } from "@earendil-works/pi-coding-agent";
+import {
+  type ExtensionAPI,
+  withFileMutationQueue,
+  DEFAULT_MAX_BYTES,
+  DEFAULT_MAX_LINES,
+  formatSize,
+  truncateHead,
+} from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import * as fs from "node:fs";
 import * as path from "node:path";
 
 /** Existing files with fewer than this many lines may be overwritten by `write`. */
 const MAX_OVERWRITE_LINES = 64;
-
-/** Maximum lines returned by `read` in a single call. */
-const MAX_READ_LINES = 2000;
 
 /**
  * Extensions of the languages pi-lens parses with tree-sitter, i.e. what
@@ -194,7 +198,7 @@ export default function restrictedBuiltinToolsExtension(pi: ExtensionAPI) {
           "Absolute paths, ~-prefixed paths, '..' segments, and trailing slashes are rejected.",
       }),
       offset: Type.Optional(Type.Number({ description: "Line number to start reading from (1-indexed)" })),
-      limit: Type.Optional(Type.Number({ description: `Maximum number of lines to read (default ${MAX_READ_LINES})` })),
+      limit: Type.Optional(Type.Number({ description: `Maximum number of lines to read (default ${DEFAULT_MAX_LINES})` })),
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       const { rel, target } = resolveWorkspacePath(params.path, ctx.cwd);
@@ -218,11 +222,18 @@ export default function restrictedBuiltinToolsExtension(pi: ExtensionAPI) {
       if (content.endsWith("\n")) allLines.pop();
       const total = allLines.length;
       const start = Math.max(1, params.offset ?? 1);
-      const limit = Math.min(params.limit ?? MAX_READ_LINES, MAX_READ_LINES);
+      const limit = Math.min(params.limit ?? DEFAULT_MAX_LINES, DEFAULT_MAX_LINES);
       const slice = allLines.slice(start - 1, start - 1 + limit);
-      const end = start + slice.length - 1;
+      if (slice.length === 0) {
+        throw new Error(`offset ${start} is beyond end of file (${total} lines)`);
+      }
+      const truncation = truncateHead(slice.join("\n"));
+      if (truncation.firstLineExceedsLimit) {
+        throw new Error(`line ${start} exceeds ${formatSize(DEFAULT_MAX_BYTES)} limit`);
+      }
+      const end = start + truncation.outputLines - 1;
 
-      let text = slice.join("\n");
+      let text = truncation.content;
       if (start > 1 || end < total) {
         text = `Lines ${start}-${end} of ${total}\n${text}`;
       }
