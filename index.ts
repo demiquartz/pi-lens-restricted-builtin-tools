@@ -128,7 +128,13 @@ export default function restrictedBuiltinToolsExtension(pi: ExtensionAPI) {
         description: "Content to write to the file",
       }),
     }),
-    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+    async execute(
+      _toolCallId: string,
+      params: { path: string; content: string },
+      _signal: AbortSignal,
+      _onUpdate: (...args: unknown[]) => void,
+      ctx: { cwd: string },
+    ) {
       const { rel, target } = resolveWorkspacePath(params.path, ctx.cwd);
 
       let overwrittenLines: number | undefined;
@@ -140,7 +146,7 @@ export default function restrictedBuiltinToolsExtension(pi: ExtensionAPI) {
         try {
           existing = await fs.promises.stat(target);
         } catch (error) {
-          if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+          if ((error as { code?: string }).code !== "ENOENT") throw error;
         }
 
         if (existing) {
@@ -161,7 +167,7 @@ export default function restrictedBuiltinToolsExtension(pi: ExtensionAPI) {
           try {
             await fs.promises.writeFile(target, params.content, { encoding: "utf-8", flag: "wx" });
           } catch (error) {
-            if ((error as NodeJS.ErrnoException).code === "EEXIST") {
+            if ((error as { code?: string }).code === "EEXIST") {
               throw new Error(`path already exists: ${rel}`);
             }
             throw error;
@@ -200,7 +206,13 @@ export default function restrictedBuiltinToolsExtension(pi: ExtensionAPI) {
       offset: Type.Optional(Type.Number({ description: "Line number to start reading from (1-indexed)" })),
       limit: Type.Optional(Type.Number({ description: `Maximum number of lines to read (default ${DEFAULT_MAX_LINES})` })),
     }),
-    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+    async execute(
+      _toolCallId: string,
+      params: { path: string; offset?: number; limit?: number },
+      _signal: AbortSignal,
+      _onUpdate: (...args: unknown[]) => void,
+      ctx: { cwd: string },
+    ) {
       const { rel, target } = resolveWorkspacePath(params.path, ctx.cwd);
       assertNotLensFormat(rel, "read");
 
@@ -208,7 +220,7 @@ export default function restrictedBuiltinToolsExtension(pi: ExtensionAPI) {
       try {
         content = await fs.promises.readFile(target, "utf-8");
       } catch (error) {
-        const code = (error as NodeJS.ErrnoException).code;
+        const code = (error as { code?: string }).code;
         if (code === "ENOENT") throw new Error(`file not found: ${rel}`);
         if (code === "EISDIR") throw new Error(`path is a directory, not a file: ${rel}`);
         throw error;
@@ -268,7 +280,13 @@ export default function restrictedBuiltinToolsExtension(pi: ExtensionAPI) {
         { description: "One or more edits to apply. Each oldText must match uniquely; edits must not overlap." },
       ),
     }),
-    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+    async execute(
+      _toolCallId: string,
+      params: { path: string; edits: { oldText: string; newText: string }[] },
+      _signal: AbortSignal,
+      _onUpdate: (...args: unknown[]) => void,
+      ctx: { cwd: string },
+    ) {
       const { rel, target } = resolveWorkspacePath(params.path, ctx.cwd);
       assertNotLensFormat(rel, "edit");
 
@@ -279,7 +297,7 @@ export default function restrictedBuiltinToolsExtension(pi: ExtensionAPI) {
         try {
           original = await fs.promises.readFile(target, "utf-8");
         } catch (error) {
-          const code = (error as NodeJS.ErrnoException).code;
+          const code = (error as { code?: string }).code;
           if (code === "ENOENT") throw new Error(`file not found: ${rel}`);
           if (code === "EISDIR") throw new Error(`path is a directory, not a file: ${rel}`);
           throw error;
