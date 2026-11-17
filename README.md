@@ -9,17 +9,17 @@ A pi extension that registers restricted versions of the built-in `write`, `read
 ## Tools
 
 | Tool | Scope | Notes |
-|------|-------|-------|
+| --- | --- | --- |
 | `write` | Any format | Creates new files, or overwrites existing files with fewer than 64 lines (the bootstrap path; larger files are edited incrementally) |
 | `read` | Non-lens formats only | Reads prose/config; rejects tree-sitter languages (use `read_symbol`/`module_report`) |
-| `edit` | Non-lens formats only | Exact text replacement; rejects ast-grep languages (use `ast_grep_replace`) |
+| `edit` | Non-lens formats only | Exact text replacement; rejects `ast_grep_replace` languages (use `ast_grep_replace`) |
 
 ## Safety
 
 All tools are confined to the workspace — these guarantees hold only while `bash` is disabled (i.e. running with `--no-builtin-tools`); running with `bash` available (e.g. via `--exclude-tools`) is outside these guarantees.
 
 | Behavior | Result |
-|----------|--------|
+| --- | --- |
 | Absolute path (`/tmp/foo.txt`) | Fails (relative paths only) |
 | `~`-prefixed path (`~/foo.txt`) | Fails (relative paths only) |
 | `..` segments (`../foo.txt`) | Fails |
@@ -27,16 +27,20 @@ All tools are confined to the workspace — these guarantees hold only while `ba
 | Resolves outside the workspace (including via symlinks) | Fails |
 
 `write` additionally:
+
 - Creates parent directories recursively
 - Overwrites an existing file only if it has fewer than 64 lines
 - Fails if the path exists as a file with 64+ lines or as a directory — larger files are edited incrementally (`edit` for prose, `ast_grep_replace` for code)
 
 `read`/`edit` additionally:
+
 - Reject files in pi-lens-supported formats (code, JSON, YAML), pointing to pi-lens
 
 `edit` additionally:
+
 - Each `oldText` must match uniquely in the file
 - Edits must not overlap
+- All `oldText` are validated against the original file before any edit is applied — the call is all-or-nothing (a failed edit leaves the file untouched)
 
 ## pi-lens-supported formats (rejected by `read`/`edit`)
 
@@ -46,11 +50,14 @@ All tools are confined to the workspace — these guarantees hold only while `ba
 - **`edit`** rejects the languages `ast_grep_replace` can edit — the 24 lang IDs in pi-lens's `tools/shared.ts` `LANGUAGES`. `ast_grep_replace` refuses any other `lang` as `unknown lang`.
 
 The sets differ in both directions:
+
 - `nix`/`scala`/`haskell` are in `LANGUAGES` but have no tree-sitter grammar, so `read` accepts them (text) and `edit` rejects them (use `ast_grep_replace`).
 - `dart`/`zig` have tree-sitter grammars (so `read` rejects them) but are **not** in `LANGUAGES`, so `ast_grep_replace` cannot edit them and `edit` accepts them (text).
 - `toml`/`vue`/`ocaml`/`cue`/`groovy` have tree-sitter grammars but are not in `LANGUAGES`, so `read` rejects them and `edit` accepts them (text).
 
 Every rejected format has a working pi-lens counterpart, so there is no dead end.
+
+Matching rule: extension = the last dot segment of the filename, lowercased (`MAIN.PY` → `py`, `archive.tar.gz` → `gz`); dotfiles (`.bashrc`) and files without a dot have no extension and are never matched.
 
 **`read` rejects (tree-sitter):**
 `sh` `bash` `zsh` `ksh` `c` `h` `cpp` `cc` `cxx` `hpp` `hxx` `cs` `css` `dart` `ex` `exs` `go` `html` `htm` `java` `js` `mjs` `cjs` `jsx` `json` `kt` `kts` `lua` `ml` `mli` `php` `py` `rb` `rs` `swift` `toml` `tsx` `ts` `vue` `yaml` `yml` `zig` `cue` `groovy`
